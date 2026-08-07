@@ -1,0 +1,7 @@
+../Core/Src/motor_controller.cpp:3:1:MotorController::MotorController(TIM_HandleTypeDef*, uint32_t, MotorMode)	1
+../Core/Src/motor_controller.cpp:16:1:MotorController::~MotorController()	1
+../Core/Src/motor_controller.cpp:20:9:uint8_t MotorController::isInitialized()	1
+../Core/Src/motor_controller.cpp:25:6:void MotorController::setPulseRange(uint32_t, uint32_t)	1
+../Core/Src/motor_controller.cpp:34:9:uint8_t MotorController::setSpeed(float)	6
+../Core/Src/motor_controller.cpp:61:9:uint8_t MotorController::stop()	1
+../Core/Src/motor_controller.cpp:66:10:uint32_t MotorController::speedToParseWidth(float)	3

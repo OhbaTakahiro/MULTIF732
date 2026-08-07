@@ -1,0 +1,22 @@
+C:\ST\STM32CubeIDE_1.16.1\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.win32_1.0.200.202406191623\tools\bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/include/c++/12.3.1/cmath:241:3:constexpr float std::fabs(float)	1
+../Core/Inc/matrix.h:316:8:Matrix::Matrix(int16_t, int16_t, InitZero)	2
+../Core/Inc/matrix.h:340:8:Matrix::Matrix(const Matrix&)	2
+../Core/Inc/matrix.h:356:16:Matrix& Matrix::operator=(const Matrix&)	2
+../Core/Inc/matrix.h:374:8:Matrix::~Matrix()	1
+../Core/Inc/matrix.h:384:20:float& Matrix::operator()(int16_t, int16_t)	7
+../Core/Inc/matrix.h:395:19:float Matrix::operator()(int16_t, int16_t) const	7
+../Core/Inc/matrix.h:451:13:bool Matrix::bMatrixIsValid()	5
+../Core/Inc/matrix.h:462:13:void Matrix::vSetMatrixInvalid()	1
+../Core/Inc/matrix.h:593:15:Matrix Matrix::operator+(const Matrix&) const	5
+../Core/Inc/matrix.h:608:15:Matrix Matrix::operator-(const Matrix&) const	5
+../Core/Inc/matrix.h:623:15:Matrix Matrix::operator*(const Matrix&) const	5
+../Core/Inc/matrix.h:645:13:void Matrix::vRoundingElementToZero(int16_t, int16_t)	2
+../Core/Inc/matrix.h:662:13:void Matrix::vSetHomogen(float)	3
+../Core/Inc/matrix.h:682:13:void Matrix::vSetDiag(float)	4
+../Core/Inc/matrix.h:694:13:void Matrix::vSetIdentity()	1
+../Core/Inc/matrix.h:698:15:Matrix MatIdentity(int16_t)	1
+../Core/Inc/matrix.h:705:15:Matrix Matrix::Transpose()	3
+../Core/Inc/matrix.h:877:15:Matrix Matrix::Invers() const	14
+../Core/Src/ekf.cpp:65:1:EKF::EKF(const Matrix&, const Matrix&, const Matrix&, const Matrix&, bool (*)(Matrix&, const Matrix&, const Matrix&), bool (*)(Matrix&, const Matrix&, const Matrix&), bool (*)(Matrix&, const Matrix&, const Matrix&), bool (*)(Matrix&, const Matrix&, const Matrix&))	1
+../Core/Src/ekf.cpp:89:6:void EKF::vReset(const Matrix&, const Matrix&, const Matrix&, const Matrix&)	1
+../Core/Src/ekf.cpp:97:6:bool EKF::bUpdate(const Matrix&, const Matrix&)	6

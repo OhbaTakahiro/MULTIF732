@@ -1,0 +1,4 @@
+../Core/Inc/ICM42688P.h:15:7:constexpr ICM42688P::ICM42688P()	1
+../Core/Src/ICM42688P_HAL_I2C.cpp:14:1:ICM42688P_HAL_I2C::ICM42688P_HAL_I2C(I2C_HandleTypeDef*, uint8_t)	1
+../Core/Src/ICM42688P_HAL_I2C.cpp:20:6:virtual void ICM42688P_HAL_I2C::Write(ICM42688P::BANK0, uint8_t*, uint8_t)	1
+../Core/Src/ICM42688P_HAL_I2C.cpp:25:6:virtual void ICM42688P_HAL_I2C::Read(ICM42688P::BANK0, uint8_t*, uint8_t)	1

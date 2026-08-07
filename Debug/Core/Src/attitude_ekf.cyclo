@@ -1,0 +1,24 @@
+../Core/Inc/matrix.h:316:8:Matrix::Matrix(int16_t, int16_t, InitZero)	2
+../Core/Inc/matrix.h:340:8:Matrix::Matrix(const Matrix&)	2
+../Core/Inc/matrix.h:356:16:Matrix& Matrix::operator=(const Matrix&)	2
+../Core/Inc/matrix.h:374:8:Matrix::~Matrix()	1
+../Core/Inc/matrix.h:384:20:float& Matrix::operator()(int16_t, int16_t)	7
+../Core/Inc/matrix.h:395:19:float Matrix::operator()(int16_t, int16_t) const	7
+../Core/Inc/matrix.h:662:13:void Matrix::vSetHomogen(float)	3
+../Core/Inc/matrix.h:670:13:void Matrix::vSetToZero()	1
+../Core/Inc/matrix.h:682:13:void Matrix::vSetDiag(float)	4
+../Core/Inc/ekf.h:26:18:const Matrix EKF::GetX() const	1
+../Core/Src/attitude_ekf.cpp:38:6:bool AttitudeEKF_UpdateX(Matrix&, const Matrix&, const Matrix&)	7
+../Core/Src/attitude_ekf.cpp:105:6:bool AttitudeEKF_UpdateY(Matrix&, const Matrix&, const Matrix&)	1
+../Core/Src/attitude_ekf.cpp:134:6:bool AttitudeEKF_CalcJacobianF(Matrix&, const Matrix&, const Matrix&)	1
+../Core/Src/attitude_ekf.cpp:179:6:bool AttitudeEKF_CalcJacobianH(Matrix&, const Matrix&, const Matrix&)	1
+../Core/Inc/ekf.h:13:7:EKF::~EKF()	1
+../Core/Inc/ekf.h:13:7:EKF& EKF::operator=(EKF&&)	1
+../Core/Src/attitude_ekf.cpp:218:6:bool AttitudeEKF_Init(AttitudeEKF_t*, float)	2
+../Core/Src/attitude_ekf.cpp:268:6:bool AttitudeEKF_Reset(AttitudeEKF_t*)	2
+../Core/Src/attitude_ekf.cpp:296:6:bool AttitudeEKF_Update(AttitudeEKF_t*, const float*, const float*)	6
+../Core/Src/attitude_ekf.cpp:341:6:void AttitudeEKF_GetAngles(const AttitudeEKF_t*, float*)	3
+../Core/Src/attitude_ekf.cpp:350:12:float AttitudeEKF_GetRoll(const AttitudeEKF_t*)	2
+../Core/Src/attitude_ekf.cpp:355:12:float AttitudeEKF_GetPitch(const AttitudeEKF_t*)	2
+../Core/Src/attitude_ekf.cpp:360:12:float AttitudeEKF_GetYaw(const AttitudeEKF_t*)	2
+../Core/Src/attitude_ekf.cpp:372:6:void SPEW_THE_ERROR(const char*)	1
