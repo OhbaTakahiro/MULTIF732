@@ -9,6 +9,7 @@ void armf(State* current_state, Context* context, int sbusdata9ch){
     printf("Arm %d\n",context->count);
     if(sbusdata9ch < 1000){
     	*current_state = State::Dis;
+    	return;  // Flyへの上書きを防ぐ
     }
     *current_state = State::Fly;
 }
