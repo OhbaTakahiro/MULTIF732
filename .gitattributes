@@ -1,0 +1,5 @@
+# Keep text normalized in Git while using Windows line endings in the workspace.
+* text=auto eol=crlf
+
+# Files consumed by Unix-like shells must retain LF endings.
+*.sh text eol=lf
