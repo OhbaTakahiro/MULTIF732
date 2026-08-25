@@ -43,6 +43,7 @@ typedef struct {
     float_prec roll;        /* Roll angle (φ) in radians */
     float_prec pitch;       /* Pitch angle (θ) in radians */
     float_prec yaw;         /* Yaw angle (ψ) in radians */
+    float_prec dt;          /* Filter sampling period in seconds */
 } AttitudeEKF_t;
 
 

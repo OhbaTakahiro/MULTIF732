@@ -128,8 +128,8 @@ class ICM42688P{
         uint8_t Calibration(uint16_t count);
 
 		protected:
-        virtual void Write(ICM42688P::BANK0 reg_addr, uint8_t* tx_buffer, uint8_t len) = 0;
-        virtual void Read(ICM42688P::BANK0 reg_addr, uint8_t* rx_buffer, uint8_t len) = 0;
+        virtual bool Write(ICM42688P::BANK0 reg_addr, uint8_t* tx_buffer, uint8_t len) = 0;
+        virtual bool Read(ICM42688P::BANK0 reg_addr, uint8_t* rx_buffer, uint8_t len) = 0;
 
 		private:
         // Offset

@@ -1,9 +1,6 @@
 #include "wrapper.hpp"
 #include "main.h"
 #include "state_type.hpp"
-#include <bits/stdc++.h>
-#include "string"
-using namespace std;
 #include "usart.h" // UARTの設定を読み込む
 #include "stdio.h"
 // 使用したい通信プロトコルのヘッダーファイルをインクルード
@@ -12,8 +9,6 @@ using namespace std;
 #include "FuncList.hpp"
 
 #include "math.h"
-#include <cstring>
-
 // EKF library
 #include "attitude_ekf.h"
 
@@ -27,7 +22,9 @@ float gyro_data[3] = {0, 0, 0};   // deg/s
 State current_state = State::Start;
 Context context;
 uint8_t  ReceiveBuffer[25];
-uint16_t SBUSData[10] = {};
+volatile uint16_t SBUSData[10] = {};
+volatile uint32_t last_sbus_tick = 0;
+volatile bool sbus_failsafe = true;
 
 ICM42688P_HAL_I2C icm(&hi2c1, 0b1101001);
 
@@ -38,6 +35,7 @@ void SBUS_decode();
 // --- マイクロ秒(μs)タイマー機能 ---
 void DWT_Init(void) {
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CYCCNT = 0;
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
@@ -66,8 +64,13 @@ void init(){
 	}
 	printf("found\n");
 	// センサーの設定
-	icm.AccelConfig(icm.ACCEL_Mode::LowNoize, icm.ACCEL_SCALE::SCALE02g, icm.ACCEL_ODR::ODR01000hz, icm.ACCEL_DLPF::ODR40);
-	icm.GyroConfig(icm.GYRO_MODE::LowNoize, icm.GYRO_SCALE::Dps0250, icm.GYRO_ODR::ODR01000hz, icm.GYRO_DLPF::ODR40);
+	if (icm.AccelConfig(icm.ACCEL_Mode::LowNoize, icm.ACCEL_SCALE::SCALE02g,
+                        icm.ACCEL_ODR::ODR01000hz, icm.ACCEL_DLPF::ODR40) != 0 ||
+	    icm.GyroConfig(icm.GYRO_MODE::LowNoize, icm.GYRO_SCALE::Dps0250,
+	                   icm.GYRO_ODR::ODR01000hz, icm.GYRO_DLPF::ODR40) != 0) {
+		printf("ICM42688p configuration failed\n");
+		while (1) { }
+	}
 	//ここから姿勢推定
 	printf("=== System Start ===\n");
 
@@ -106,11 +109,36 @@ void loop(){
 	//  以下が 400Hz (2.5ms周期) で実行される処理
 	// ==========================================
 
-	sbusdata9ch = SBUSData[8];
-	sbusdata3ch = SBUSData[2];
-	sbusdata1ch = SBUSData[0];
-	sbusdata4ch = SBUSData[3];
-	sbusdata2ch = SBUSData[1];
+	uint16_t sbus_snapshot[10];
+	const uint32_t primask = __get_PRIMASK();
+	__disable_irq();
+	for (uint8_t i = 0; i < 10; ++i) {
+		sbus_snapshot[i] = SBUSData[i];
+	}
+	const bool sbus_ok = !sbus_failsafe && (HAL_GetTick() - last_sbus_tick <= 100U);
+	if (primask == 0U) {
+		__enable_irq();
+	}
+
+	sbusdata9ch = sbus_ok ? sbus_snapshot[8] : 0;
+	sbusdata3ch = sbus_snapshot[2];
+	sbusdata1ch = sbus_snapshot[0];
+	sbusdata4ch = sbus_snapshot[3];
+	sbusdata2ch = sbus_snapshot[1];
+
+	// センサー値は EKF/PID より先に取得する。通信失敗時は飛行を継続しない。
+	if (icm.GetData(accel_data, gyro_data) != 0) {
+		if (current_state == State::Fly) {
+			stopAllMotors();
+			current_state = State::Dis;
+		}
+		return;
+	}
+
+	if (!sbus_ok && current_state == State::Fly) {
+		stopAllMotors();
+		current_state = State::Dis;
+	}
 
 	switch(current_state){
 	    case State::Start:
@@ -136,25 +164,6 @@ void loop(){
             break;
 	}
 
-	icm.GetData(accel_data, gyro_data);
-
-	// デバッグ用の送信・printf は処理が重いため100ループに1回(4Hz)だけ実行
-	static uint32_t debug_counter = 0;
-	debug_counter++;
-	if(debug_counter >= 100){
-		debug_counter = 0;
-
-		std::string str;
-		for(int i = 0; i < 6; i++){
-			str = std::to_string(SBUSData[i]) + " ";
-			HAL_UART_Transmit(&huart2, (uint8_t *)str.c_str(),str.length(),100);
-		}
-		str = "\n";
-		HAL_UART_Transmit(&huart2, (uint8_t *)str.c_str(),str.length(),100);
-
-		printf("Accel[m/s^2]: %+4.4f %+4.4f %+4.4f\n", accel_data[0], accel_data[1], accel_data[2]);
-		printf("Gyro[deg/s]:  %+4.4f %+4.4f %+4.4f\n", gyro_data[0], gyro_data[1], gyro_data[2]);
-	}
 }
 
 //データを受信したら呼び出される
@@ -165,8 +174,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
     //データがSBUSの形式であるか確認
 	if(ReceiveBuffer[0] == 0x0F && ReceiveBuffer[24] == 0x00){
-
-		SBUS_decode();//SUBSデータの分解
+		// bit2: frame lost, bit3: failsafe。異常フレームはただちに安全側へ。
+		sbus_failsafe = (ReceiveBuffer[23] & 0x0CU) != 0U;
+		if (!sbus_failsafe) {
+			SBUS_decode();
+			last_sbus_tick = HAL_GetTick();
+		}
     }
 
     //受信の再開

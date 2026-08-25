@@ -1,5 +1,3 @@
-#include <bits/stdc++.h>
-using namespace std;
 #include "state_type.hpp"
 #include "wrapper.hpp"
 #include <stdio.h>
@@ -38,6 +36,5 @@ void initf(State* current_state, Context* context){
 	printf("Motor speed: 0 %%\n");
 	HAL_Delay(10000);
     context->count++;
-    printf("Init %d\n",context->count);
     *current_state = State::Calib;
 }

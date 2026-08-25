@@ -10,11 +10,17 @@ PwmController::PwmController(TIM_HandleTypeDef* htim, uint32_t channel)
         return;
     }
 
-    // タイマーのクロック周波数を取得
-    // STM32F446の場合、タイマークロック = APB1/APB2ペリフェラルクロック × 2
-    // APB1タイマークロック（90MHz）を取得
-    uint32_t apb1_clock = HAL_RCC_GetPCLK1Freq();
-    m_timer_clock = apb1_clock * 2;
+    // TIM1/TIM8 は APB2、それ以外は APB1 に接続される。APB 分周が
+    // 1 以外のときだけ、タイマークロックはペリフェラルクロックの 2 倍となる。
+    const bool is_apb2_timer = (m_htim->Instance == TIM1) || (m_htim->Instance == TIM8);
+    const uint32_t apb_prescaler = is_apb2_timer
+        ? (RCC->CFGR & RCC_CFGR_PPRE2)
+        : (RCC->CFGR & RCC_CFGR_PPRE1);
+
+    m_timer_clock = is_apb2_timer ? HAL_RCC_GetPCLK2Freq() : HAL_RCC_GetPCLK1Freq();
+    if (apb_prescaler != RCC_HCLK_DIV1) {
+        m_timer_clock *= 2U;
+    }
 
     // タイマープリスケーラーを取得
     m_prescaler = m_htim->Init.Prescaler;
@@ -74,13 +80,9 @@ uint8_t PwmController::stop() {
         return 1;
     }
 
-    // PWM出力を停止
-    if (HAL_TIM_PWM_Stop(m_htim, m_channel) != HAL_OK) {
-
-        return 1;
-    }
-
-    return 0;
+    // ESC のディスアームは PWM を止めず、最小パルスを出し続ける。
+    // これにより再アーム時に PWM を開始し忘れることがない。
+    return setPulseWidth(MIN_PULSE_WIDTH);
 }
 
 bool PwmController::checkPulseWidthRange(uint32_t pulse_width_us) {

@@ -1,5 +1,3 @@
-#include <bits/stdc++.h>
-using namespace std;
 #include "state_type.hpp"
 #include "wrapper.hpp"
 #include "stdio.h"
@@ -12,7 +10,6 @@ using namespace std;
 // PID library
 #include "PID.h"
 #include "motor_controller.hpp"
-#include<cstdio>
 
 // EKF instance
 //AttitudeEKF_t* attitude_ekf = nullptr;
@@ -30,9 +27,16 @@ MotorController* motor2 = nullptr;
 MotorController* motor3 = nullptr;
 MotorController* motor4 = nullptr;
 
+void stopAllMotors(){
+    if (motor1 != nullptr) motor1->stop();
+    if (motor2 != nullptr) motor2->stop();
+    if (motor3 != nullptr) motor3->stop();
+    if (motor4 != nullptr) motor4->stop();
+}
+
 void flyf(State* current_state, Context* context, int sbusdata9ch, int sbusdata3ch, int sbusdata1ch, int sbusdata4ch, int sbusdata2ch){
+    (void)sbusdata4ch;
     context->count++;
-    printf("Fly %d\n",context->count);
     // 10ms周期で実行
     uint32_t current_tick = HAL_GetTick();
     uint32_t elapsed = current_tick - last_update_tick;
@@ -57,7 +61,6 @@ void flyf(State* current_state, Context* context, int sbusdata9ch, int sbusdata3
     // ----- EKF更新 -----
     float roll_deg = 0.0f;
     float pitch_deg = 0.0f;
-    float yaw_deg = 0.0f;
     if(attitude_ekf != nullptr){
 
     	// ジャイロをdeg/s -> rad/sに変換
@@ -72,26 +75,23 @@ void flyf(State* current_state, Context* context, int sbusdata9ch, int sbusdata3
     		// オイラー角取得
     		float roll = AttitudeEKF_GetRoll(attitude_ekf);
     		float pitch = AttitudeEKF_GetPitch(attitude_ekf);
-    		float yaw = AttitudeEKF_GetYaw(attitude_ekf);
 
     		// 結果表示（rad -> deg変換）
     		roll_deg = roll * 180.0f / M_PI;
     		pitch_deg = pitch * 180.0f / M_PI;
-    		yaw_deg = yaw * 180.0f / M_PI;
-   			printf("Roll: %+7.2f  Pitch: %+7.2f  Yaw: %+7.2f [deg]\n", roll_deg, pitch_deg, yaw_deg);
    		}
    	}
     //ここからPID
     //目標値の変換（中央1024を0度とし、傾きを最大30度にする計算）
     float roll_target = (sbusdata3ch - 1024) * 0.05f;
     float pitch_target = (sbusdata1ch - 1024) * 0.05f;
-    float yaw_target = (sbusdata4ch - 1024) * 0.05f;
     roll_pid.calc(roll_target, roll_deg);
     pitch_pid.calc(pitch_target, pitch_deg);
-    yaw_pid.calc(yaw_target, yaw_deg);
     float roll_u = roll_pid.getData();
     float pitch_u = pitch_pid.getData();
-    float yaw_u = yaw_pid.getData();
+    // 加速度計だけでは方位を観測できないため、磁気センサ等を追加するまで
+    // yaw 角PIDは使わない。角速度ヨー制御を導入する場合は別途設計する。
+    const float yaw_u = 0.0f;
 
     //ここからモーターを動かそうと試みる
     // --- 1. 基本となるスロットル量（ベースの推力）をプロポから取得 ---
@@ -125,10 +125,7 @@ void flyf(State* current_state, Context* context, int sbusdata9ch, int sbusdata3
 
     if(sbusdata9ch < 1000){
     	throttle = 0.0f;
-    	motor1->stop();
-    	motor2->stop();
-    	motor3->stop();
-    	motor4->stop();
+		stopAllMotors();
         *current_state = State::Dis;
     }
 }

@@ -19,7 +19,7 @@ class PwmController {
         // パルス幅を設定
         uint8_t setPulseWidth(uint32_t pulse_width_us);
 
-        // PWM出力を停止
+        // ESCへ最小パルスを出力して停止状態にする
         uint8_t stop();
 
     private:

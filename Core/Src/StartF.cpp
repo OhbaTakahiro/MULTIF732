@@ -1,5 +1,3 @@
-#include <bits/stdc++.h>
-using namespace std;
 #include "state_type.hpp"
 #include "wrapper.hpp"
 #include <stdio.h>
@@ -14,6 +12,5 @@ void startf(State* current_state, Context* context){
 	pitch_pid.setLimit(10.0f, 5.0f);
 	yaw_pid.setLimit(10.0f, 5.0f);
     context->count++;
-    printf("Start %d\n",context->count);
     *current_state = State::Init;
 }

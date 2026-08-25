@@ -20,6 +20,10 @@ extern "C" {
 #define Q_INIT_VALUE    (1e-4f)         /* Process noise covariance */
 #define R_INIT_VALUE    (0.01f)         /* Measurement noise covariance */
 
+/* EKF callbacks have no user-context argument. This module supports one
+ * attitude filter instance, so keep its configured sample period here. */
+static float_prec attitude_dt = SS_DT;
+
 
 /* ================================================= Nonlinear Functions ================================================= */
 
@@ -73,9 +77,9 @@ bool AttitudeEKF_UpdateX(Matrix& X_Next, const Matrix& X, const Matrix& U)
     float_prec psi_dot = q * sin_phi * cos_theta_inv + r * cos_phi * cos_theta_inv;
 
     /* Euler integration: x(k+1) = x(k) + x_dot * dt */
-    X_Next(0, 0) = phi + phi_dot * SS_DT;
-    X_Next(1, 0) = theta + theta_dot * SS_DT;
-    X_Next(2, 0) = psi + psi_dot * SS_DT;
+    X_Next(0, 0) = phi + phi_dot * attitude_dt;
+    X_Next(1, 0) = theta + theta_dot * attitude_dt;
+    X_Next(2, 0) = psi + psi_dot * attitude_dt;
 
     /* Normalize angles to [-π, π] range to avoid singularities */
     for (int16_t i = 0; i < 3; i++) {
@@ -104,6 +108,7 @@ bool AttitudeEKF_UpdateX(Matrix& X_Next, const Matrix& X, const Matrix& U)
  */
 bool AttitudeEKF_UpdateY(Matrix& Y, const Matrix& X, const Matrix& U)
 {
+    (void)U;
     float_prec phi, theta;
     float_prec cos_phi, sin_phi;
     float_prec cos_theta, sin_theta;
@@ -134,7 +139,7 @@ bool AttitudeEKF_UpdateY(Matrix& Y, const Matrix& X, const Matrix& U)
 bool AttitudeEKF_CalcJacobianF(Matrix& F, const Matrix& X, const Matrix& U)
 {
     float_prec phi, theta;
-    float_prec p, q, r;
+    float_prec q, r;
     float_prec cos_phi, sin_phi;
     float_prec cos_theta, sin_theta, tan_theta;
     float_prec sec_theta;              /* 1/cos(theta) - secant function */
@@ -142,7 +147,6 @@ bool AttitudeEKF_CalcJacobianF(Matrix& F, const Matrix& X, const Matrix& U)
     /* Extract state and input */
     phi = X(0, 0);
     theta = X(1, 0);
-    p = U(0, 0);
     q = U(1, 0);
     r = U(2, 0);
 
@@ -157,15 +161,15 @@ bool AttitudeEKF_CalcJacobianF(Matrix& F, const Matrix& X, const Matrix& U)
     /* Jacobian F = I + (∂f/∂x)*dt */
     /* Initialize to identity matrix */
     F(0, 0) = 1.0f;
-    F(0, 1) = (q * cos_phi - r * sin_phi) * tan_theta * SS_DT;
+    F(0, 1) = (q * cos_phi - r * sin_phi) * tan_theta * attitude_dt;
     F(0, 2) = 0.0f;
 
-    F(1, 0) = -(q * sin_phi + r * cos_phi) * SS_DT;
+    F(1, 0) = -(q * sin_phi + r * cos_phi) * attitude_dt;
     F(1, 1) = 1.0f;
     F(1, 2) = 0.0f;
 
-    F(2, 0) = (q * cos_phi - r * sin_phi) * sec_theta * SS_DT;
-    F(2, 1) = (q * sin_phi + r * cos_phi) * sin_theta * sec_theta * sec_theta * SS_DT;
+    F(2, 0) = (q * cos_phi - r * sin_phi) * sec_theta * attitude_dt;
+    F(2, 1) = (q * sin_phi + r * cos_phi) * sin_theta * sec_theta * sec_theta * attitude_dt;
     F(2, 2) = 1.0f;
 
     return true;
@@ -178,6 +182,7 @@ bool AttitudeEKF_CalcJacobianF(Matrix& F, const Matrix& X, const Matrix& U)
  */
 bool AttitudeEKF_CalcJacobianH(Matrix& H, const Matrix& X, const Matrix& U)
 {
+    (void)U;
     float_prec phi, theta;
     float_prec cos_phi, sin_phi;
     float_prec cos_theta, sin_theta;
@@ -217,9 +222,11 @@ bool AttitudeEKF_CalcJacobianH(Matrix& H, const Matrix& X, const Matrix& U)
 
 bool AttitudeEKF_Init(AttitudeEKF_t *ekf_sys, float_prec dt)
 {
-    if (!ekf_sys) {
+    if (!ekf_sys || !isfinite(dt) || dt <= 0.0f) {
         return false;
     }
+
+    attitude_dt = dt;
 
     /* Initialize state vector (3x1) */
     ekf_sys->state = Matrix(SS_X_LEN, 1);
@@ -261,6 +268,7 @@ bool AttitudeEKF_Init(AttitudeEKF_t *ekf_sys, float_prec dt)
     ekf_sys->roll = 0.0f;
     ekf_sys->pitch = 0.0f;
     ekf_sys->yaw = 0.0f;
+    ekf_sys->dt = dt;
 
     return true;
 }

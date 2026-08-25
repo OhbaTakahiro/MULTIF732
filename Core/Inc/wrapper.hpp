@@ -13,9 +13,11 @@ void loop(void);
 
 // これより4行はGeminiにやってもらった
 #include "attitude_ekf.h"
+#include "ICM42688P_HAL_I2C.h"
 extern AttitudeEKF_t* attitude_ekf;
 extern float accel_data[3];
 extern float gyro_data[3];
+extern ICM42688P_HAL_I2C icm;
 
 class MotorController;
 
@@ -23,6 +25,7 @@ extern MotorController* motor1;
 extern MotorController* motor2;
 extern MotorController* motor3;
 extern MotorController* motor4;
+void stopAllMotors();
 
 #endif
 

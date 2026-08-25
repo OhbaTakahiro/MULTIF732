@@ -22,7 +22,9 @@ uint8_t ICM42688P::Connection(){
 
     while(product_id != 0x47){
 
-        Read(ICM42688P::BANK0::WHO_AM_I, &product_id, 1);
+        if (!Read(ICM42688P::BANK0::WHO_AM_I, &product_id, 1)) {
+            return 1;
+        }
         error ++;
 
         if(error > 100){
@@ -52,8 +54,10 @@ uint8_t ICM42688P::AccelConfig(ICM42688P::ACCEL_Mode accel_mode, ICM42688P::ACCE
     uint8_t now_mode = 0;
     while(command != now_mode){
 
-        Write(ICM42688P::BANK0::PWR_MGMT0, &command, 1);
-        Read(ICM42688P::BANK0::PWR_MGMT0, &now_mode, 1);
+        if (!Write(ICM42688P::BANK0::PWR_MGMT0, &command, 1) ||
+            !Read(ICM42688P::BANK0::PWR_MGMT0, &now_mode, 1)) {
+            return 1;
+        }
 
         error ++;
         if(error > 100){
@@ -67,8 +71,10 @@ uint8_t ICM42688P::AccelConfig(ICM42688P::ACCEL_Mode accel_mode, ICM42688P::ACCE
     now_mode = 0;
     while(command != now_mode){
 
-        Write(ICM42688P::BANK0::ACCEL_CONFIG0, &command, 1);
-        Read(ICM42688P::BANK0::ACCEL_CONFIG0, &now_mode, 1);
+        if (!Write(ICM42688P::BANK0::ACCEL_CONFIG0, &command, 1) ||
+            !Read(ICM42688P::BANK0::ACCEL_CONFIG0, &now_mode, 1)) {
+            return 2;
+        }
 
         error ++;
         if(error > 100){
@@ -84,8 +90,10 @@ uint8_t ICM42688P::AccelConfig(ICM42688P::ACCEL_Mode accel_mode, ICM42688P::ACCE
     now_mode = 0;
     while(command != now_mode){
 
-        Write(ICM42688P::BANK0::GYRO_ACCEL_CONFIG0, &command, 1);
-        Read(ICM42688P::BANK0::GYRO_ACCEL_CONFIG0, &now_mode, 1);
+        if (!Write(ICM42688P::BANK0::GYRO_ACCEL_CONFIG0, &command, 1) ||
+            !Read(ICM42688P::BANK0::GYRO_ACCEL_CONFIG0, &now_mode, 1)) {
+            return 3;
+        }
 
         error ++;
         if(error > 100){
@@ -118,8 +126,10 @@ uint8_t ICM42688P::GyroConfig(ICM42688P::GYRO_MODE gyro_mode, ICM42688P::GYRO_SC
     uint8_t now_mode = 0;
     while(command != now_mode){
 
-        Write(ICM42688P::BANK0::PWR_MGMT0, &command, 1);
-        Read(ICM42688P::BANK0::PWR_MGMT0, &now_mode, 1);
+        if (!Write(ICM42688P::BANK0::PWR_MGMT0, &command, 1) ||
+            !Read(ICM42688P::BANK0::PWR_MGMT0, &now_mode, 1)) {
+            return 1;
+        }
 
         error ++;
         if(error > 100){
@@ -133,8 +143,10 @@ uint8_t ICM42688P::GyroConfig(ICM42688P::GYRO_MODE gyro_mode, ICM42688P::GYRO_SC
     error = 0;
     while(command != now_mode){
 
-        Write(ICM42688P::BANK0::GYRO_CONFIG0, &command, 1);
-        Read(ICM42688P::BANK0::GYRO_CONFIG0, &now_mode, 1);
+        if (!Write(ICM42688P::BANK0::GYRO_CONFIG0, &command, 1) ||
+            !Read(ICM42688P::BANK0::GYRO_CONFIG0, &now_mode, 1)) {
+            return 2;
+        }
 
         error ++;
         if(error > 100){
@@ -150,8 +162,10 @@ uint8_t ICM42688P::GyroConfig(ICM42688P::GYRO_MODE gyro_mode, ICM42688P::GYRO_SC
     now_mode = 0;
     while(command != now_mode){
 
-        Write(ICM42688P::BANK0::GYRO_ACCEL_CONFIG0, &command, 1);
-        Read(ICM42688P::BANK0::GYRO_ACCEL_CONFIG0, &now_mode, 1);
+        if (!Write(ICM42688P::BANK0::GYRO_ACCEL_CONFIG0, &command, 1) ||
+            !Read(ICM42688P::BANK0::GYRO_ACCEL_CONFIG0, &now_mode, 1)) {
+            return 3;
+        }
 
         error ++;
         if(error > 100){
@@ -180,7 +194,9 @@ uint8_t ICM42688P::GetRawData(int16_t accel_buffer[3], int16_t gyro_buffer[3]){
 
     uint8_t raw_data[12];
 
-    Read(ICM42688P::BANK0::ACCEL_DATA_X1, raw_data, 12);
+    if (!Read(ICM42688P::BANK0::ACCEL_DATA_X1, raw_data, 12)) {
+        return 1;
+    }
 
     accel_buffer[0]  = (int16_t)(raw_data[1] | (raw_data[0] << 8)) - accel_offset[0];
     accel_buffer[1]  = (int16_t)(raw_data[3] | (raw_data[2] << 8)) - accel_offset[1];
@@ -208,7 +224,9 @@ uint8_t ICM42688P::GetData(float accel_data[3], float gyro_data[3]){
     int16_t accel_buffer[3] = {};
     int16_t gyro_buffer[3] = {};
 
-    GetRawData(accel_buffer, gyro_buffer);
+    if (GetRawData(accel_buffer, gyro_buffer) != 0) {
+        return 1;
+    }
 
     for(uint8_t i = 0; i < 3; i++){
 
@@ -236,9 +254,15 @@ uint8_t ICM42688P::Calibration(uint16_t Count){
 	int16_t accel_raw[3];
 	int16_t gyro_raw[3];
 
-	for(uint16_t i=0; i<Count; i++){
+    if (Count == 0) {
+        return 1;
+    }
 
-		GetRawData(accel_raw, gyro_raw);
+    for(uint16_t i=0; i<Count; i++){
+
+        if (GetRawData(accel_raw, gyro_raw) != 0) {
+            return 1;
+        }
 
 		for(uint8_t j=0; j<3; j++){
 
@@ -253,7 +277,8 @@ uint8_t ICM42688P::Calibration(uint16_t Count){
 		gyro_offset[i] = gyro_tmp[i] / Count;
 	}
 
-	accel_offset[2] -= 32768 / accel_scale_value * 32768 * 9.8;
+    // 静止・Z軸上向きでのキャリブレーションを前提に、重力1 gは残す。
+    accel_offset[2] -= static_cast<int16_t>(9.8f / accel_scale_value);
 
 	return 0;
 
