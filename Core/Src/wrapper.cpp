@@ -51,7 +51,7 @@ void init(){
 //起動時に1度だけ実行される
 	context.count = 0;
 	//割り込みの開始
-	HAL_UART_Receive_DMA(&huart2, ReceiveBuffer, 25);
+	HAL_UART_Receive_DMA(&huart5, ReceiveBuffer, 25);
 	printf("program start\n");
 
 	// DWTマイクロ秒タイマーの起動
@@ -159,6 +159,9 @@ void loop(){
 
 //データを受信したら呼び出される
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	if (huart->Instance != UART5) {
+		return;
+	}
 
     //データがSBUSの形式であるか確認
 	if(ReceiveBuffer[0] == 0x0F && ReceiveBuffer[24] == 0x00){
@@ -167,7 +170,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     }
 
     //受信の再開
-    HAL_UART_Receive_DMA(&huart2, ReceiveBuffer, 25);
+    HAL_UART_Receive_DMA(&huart5, ReceiveBuffer, 25);
 }
 
 //SBUSからデータを取り出すプログラム

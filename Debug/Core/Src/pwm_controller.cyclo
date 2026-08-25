@@ -1,6 +1,0 @@
-../Core/Src/pwm_controller.cpp:3:1:PwmController::PwmController(TIM_HandleTypeDef*, uint32_t)	2
-../Core/Src/pwm_controller.cpp:32:1:PwmController::~PwmController()	2
-../Core/Src/pwm_controller.cpp:41:9:uint8_t PwmController::isInitialized()	1
-../Core/Src/pwm_controller.cpp:46:9:uint8_t PwmController::setPulseWidth(uint32_t)	8
-../Core/Src/pwm_controller.cpp:69:9:uint8_t PwmController::stop()	3
-../Core/Src/pwm_controller.cpp:86:6:bool PwmController::checkPulseWidthRange(uint32_t)	3
