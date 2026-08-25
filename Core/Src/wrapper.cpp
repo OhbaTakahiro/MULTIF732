@@ -24,10 +24,6 @@ AttitudeEKF_t* attitude_ekf = nullptr;
 float accel_data[3] = {0, 0, 0};  // m/s^2
 float gyro_data[3] = {0, 0, 0};   // deg/s
 
-// タイミング制御
-static uint32_t last_update_tick = 0;
-static const uint32_t UPDATE_PERIOD_MS = 10;  // 10ms (100Hz)
-
 State current_state = State::Start;
 Context context;
 uint8_t  ReceiveBuffer[25];
@@ -39,6 +35,17 @@ int sbusdata3ch ,sbusdata9ch, sbusdata1ch, sbusdata4ch, sbusdata2ch;
 
 void SBUS_decode();
 
+// --- マイクロ秒(μs)タイマー機能 ---
+void DWT_Init(void) {
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+uint32_t micros(void) {
+    return DWT->CYCCNT / (SystemCoreClock / 1000000);
+}
+// ----------------------------------
+
 void init(){
 
 //起動時に1度だけ実行される
@@ -46,6 +53,9 @@ void init(){
 	//割り込みの開始
 	HAL_UART_Receive_DMA(&huart2, ReceiveBuffer, 25);
 	printf("program start\n");
+
+	// DWTマイクロ秒タイマーの起動
+	DWT_Init();
 
 	// 通信チェック
 	if(icm.Connection()){
@@ -61,9 +71,6 @@ void init(){
 	//ここから姿勢推定
 	printf("=== System Start ===\n");
 
-	// IMUの初期化と設定をする
-	// 使うセンサーのライブラリに合わせてください
-
 	// ----- EKF初期化 -----
 	printf("[EKF] Initializing...\n");
 	attitude_ekf = new AttitudeEKF_t();
@@ -72,7 +79,6 @@ void init(){
 
 		printf("[EKF] ERROR: Initialization failed\n");
 		while(1){
-
             HAL_Delay(1000);
         }
 	}
@@ -82,27 +88,30 @@ void init(){
 	}
 
 	printf("=== Initialization Complete ===\n\n");
-	last_update_tick = HAL_GetTick();
-	//ここまで姿勢推定
 }
+
 void loop(){
-//一度の実行が終了後、無限に繰り返される
-	printf("loop start\n");
-	std::string str;
-    //受信したデータをPCに送信
-    for(int i = 0; i < 6; i++){
-        str = std::to_string(SBUSData[i]) + " ";
-        HAL_UART_Transmit(&huart2, (uint8_t *)str.c_str(),str.length(),100);
-    }
-    //改行を追加
-	str = "\n";
-	//データを送信
-	HAL_UART_Transmit(&huart2, (uint8_t *)str.c_str(),str.length(),100);
+	static uint32_t last_us = 0;
+	const uint32_t PERIOD_US = 2500; // 400Hz = 2.5ms = 2500us
+
+	uint32_t now = micros();
+
+	// 2500μs (2.5ms) 経過していない場合は何もせず抜ける
+	if (now - last_us < PERIOD_US) {
+		return;
+	}
+	last_us = now;
+
+	// ==========================================
+	//  以下が 400Hz (2.5ms周期) で実行される処理
+	// ==========================================
+
 	sbusdata9ch = SBUSData[8];
 	sbusdata3ch = SBUSData[2];
 	sbusdata1ch = SBUSData[0];
 	sbusdata4ch = SBUSData[3];
 	sbusdata2ch = SBUSData[1];
+
 	switch(current_state){
 	    case State::Start:
 	    	startf(&current_state, &context);
@@ -125,13 +134,29 @@ void loop(){
         case State::Dis:
             disf(&current_state, &context);
             break;
-	        }
+	}
+
 	icm.GetData(accel_data, gyro_data);
 
-	printf("Accel[m/s^2]: %+4.4f %+4.4f %+4.4f\n", accel_data[0], accel_data[1], accel_data[2]);
-	printf("Gyro[deg/s]:  %+4.4f %+4.4f %+4.4f\n", gyro_data[0], gyro_data[1], gyro_data[2]);
-	HAL_Delay(500);
+	// デバッグ用の送信・printf は処理が重いため100ループに1回(4Hz)だけ実行
+	static uint32_t debug_counter = 0;
+	debug_counter++;
+	if(debug_counter >= 100){
+		debug_counter = 0;
+
+		std::string str;
+		for(int i = 0; i < 6; i++){
+			str = std::to_string(SBUSData[i]) + " ";
+			HAL_UART_Transmit(&huart2, (uint8_t *)str.c_str(),str.length(),100);
+		}
+		str = "\n";
+		HAL_UART_Transmit(&huart2, (uint8_t *)str.c_str(),str.length(),100);
+
+		printf("Accel[m/s^2]: %+4.4f %+4.4f %+4.4f\n", accel_data[0], accel_data[1], accel_data[2]);
+		printf("Gyro[deg/s]:  %+4.4f %+4.4f %+4.4f\n", gyro_data[0], gyro_data[1], gyro_data[2]);
+	}
 }
+
 //データを受信したら呼び出される
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
