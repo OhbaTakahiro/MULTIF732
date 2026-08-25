@@ -28,7 +28,7 @@ volatile bool sbus_failsafe = true;
 
 ICM42688P_HAL_I2C icm(&hi2c1, 0b1101001);
 
-int sbusdata3ch ,sbusdata9ch, sbusdata1ch, sbusdata4ch, sbusdata2ch;
+int sbusdata3ch, sbusdata9ch, sbusdata1ch, sbusdata4ch, sbusdata2ch, sbusdata5ch;
 
 void SBUS_decode();
 
@@ -125,6 +125,8 @@ void loop(){
 	sbusdata1ch = sbus_snapshot[0];
 	sbusdata4ch = sbus_snapshot[3];
 	sbusdata2ch = sbus_snapshot[1];
+	sbusdata5ch = sbus_ok ? sbus_snapshot[4] : 500;
+	updateServoFromSbus(static_cast<uint16_t>(sbusdata5ch));
 
 	// センサー値は EKF/PID より先に取得する。通信失敗時は飛行を継続しない。
 	if (icm.GetData(accel_data, gyro_data) != 0) {

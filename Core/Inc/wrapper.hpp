@@ -20,12 +20,15 @@ extern float gyro_data[3];
 extern ICM42688P_HAL_I2C icm;
 
 class MotorController;
+class ServoController;
 
 extern MotorController* motor1;
 extern MotorController* motor2;
 extern MotorController* motor3;
 extern MotorController* motor4;
+extern ServoController* servo1;
 void stopAllMotors();
+void updateServoFromSbus(uint16_t sbus_value);
 
 #endif
 

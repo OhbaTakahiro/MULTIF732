@@ -10,6 +10,7 @@
 // PID library
 #include "PID.h"
 #include "motor_controller.hpp"
+#include "servo_controller.hpp"
 
 // EKF instance
 //AttitudeEKF_t* attitude_ekf = nullptr;
@@ -26,12 +27,28 @@ MotorController* motor1 = nullptr;
 MotorController* motor2 = nullptr;
 MotorController* motor3 = nullptr;
 MotorController* motor4 = nullptr;
+ServoController* servo1 = nullptr;
 
 void stopAllMotors(){
     if (motor1 != nullptr) motor1->stop();
     if (motor2 != nullptr) motor2->stop();
     if (motor3 != nullptr) motor3->stop();
     if (motor4 != nullptr) motor4->stop();
+}
+
+void updateServoFromSbus(uint16_t sbus_value){
+    if (servo1 == nullptr) {
+        return;
+    }
+
+    // 500 -> 0°, 1000 -> 45°, 1500 -> 90°。範囲外は端で飽和させる。
+    float angle = (static_cast<float>(sbus_value) - 500.0f) * 0.09f;
+    if (angle < 0.0f) {
+        angle = 0.0f;
+    } else if (angle > 90.0f) {
+        angle = 90.0f;
+    }
+    (void)servo1->setAngle(angle);
 }
 
 void flyf(State* current_state, Context* context, int sbusdata9ch, int sbusdata3ch, int sbusdata1ch, int sbusdata4ch, int sbusdata2ch){

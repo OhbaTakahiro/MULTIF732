@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "tim.h"
 #include "motor_controller.hpp"
+#include "servo_controller.hpp"
 
 void initf(State* current_state, Context* context){
 	// インスタンスの作成
@@ -10,6 +11,7 @@ void initf(State* current_state, Context* context){
 	motor2 = new MotorController(&htim1, TIM_CHANNEL_2, MotorMode::NORMAL);
 	motor3 = new MotorController(&htim1, TIM_CHANNEL_3, MotorMode::NORMAL);
 	motor4 = new MotorController(&htim1, TIM_CHANNEL_4, MotorMode::NORMAL);
+	servo1 = new ServoController(&htim3, TIM_CHANNEL_1);
 
 	// 初期化の確認
 	if (motor1->isInitialized()&&motor2->isInitialized()&&motor3->isInitialized()&&motor4->isInitialized()) {
@@ -27,6 +29,14 @@ void initf(State* current_state, Context* context){
 	motor3->setPulseRange(1000, 2000);
 	motor4->setPulseRange(1000, 2000);
 	printf("Pulse range set to 1000us ~ 2000us\n");
+
+	if (!servo1->isInitialized()) {
+		printf("ServoController initialization failed\n");
+		*current_state = State::Dis;
+		return;
+	}
+	servo1->setPulseRange(1000, 2000);
+	servo1->setAngle(0.0f);
 
 	// 0%に設定（初期値を送信）
 	motor1->setSpeed(0.0f);
