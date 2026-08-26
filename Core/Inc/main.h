@@ -60,6 +60,9 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
+#define LED_Pin GPIO_PIN_1
+#define LED_GPIO_Port GPIOA
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
